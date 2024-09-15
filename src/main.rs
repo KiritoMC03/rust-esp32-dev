@@ -1,5 +1,8 @@
 mod lcd;
 mod blink;
+mod uuid;
+mod rgb_led;
+mod wifi;
 
 use esp_idf_svc::hal::peripherals::Peripherals;
 

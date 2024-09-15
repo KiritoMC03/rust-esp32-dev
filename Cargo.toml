@@ -35,6 +35,11 @@ anyhow = "1.0.86"
 embedded-hal = "1.0.0"
 esp-idf-sys = "0.35.0"
 hd44780-driver = "0.4.0" # Driver for HD44780 based LCDs
+rgb = "0.8.29"
+toml-cfg = "0.2.0"
 
 [build-dependencies]
 embuild = "0.32.0"
+uuid   = { version = "=1.9.1", features = ["v4"] }
+anyhow = "1.0.86"
+toml-cfg = "0.2.0"

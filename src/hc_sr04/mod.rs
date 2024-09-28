@@ -5,6 +5,7 @@ use esp_idf_hal::gpio::{Input, InputPin, InterruptType, Output, OutputPin, Pin, 
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_svc::systime::EspSystemTime;
 use esp_idf_sys::EspError;
+use crate::helpers;
 
 pub  struct HCSR04<'a, TTrig: Pin, TEcho: Pin> {
     trigger: Trigger<'a, TTrig>,
@@ -75,12 +76,8 @@ impl<'a, T: OutputPin> Trigger<'a, T> {
 
 impl<'a, T: InputPin + OutputPin> Echo<'a, T> {
     pub fn from_pin(pin: impl Peripheral<P = T> + 'a) -> Result<Self, EspError> {
-        let mut pin = PinDriver::input(pin)?;
-        pin.set_pull(Pull::Down).unwrap();
-        pin.set_interrupt_type(InterruptType::AnyEdge).unwrap();
-        pin.enable_interrupt().unwrap();
         Ok(Self {
-            pin,
+            pin: helpers::pin::input_pin_pull_intrp(pin, Pull::Down, InterruptType::AnyEdge)?,
         })
     }
 }

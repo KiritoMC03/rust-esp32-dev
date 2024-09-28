@@ -3,13 +3,23 @@ mod blink;
 mod uuid;
 mod rgb_led;
 mod wifi;
+mod ic_line_check;
+mod hc_sr04;
+mod helpers;
 
+use esp_idf_hal::delay::FreeRtos;
 use esp_idf_svc::hal::peripherals::Peripherals;
+use crate::ic_line_check::ICLineChecker;
 
 fn main() -> anyhow::Result<()> {
     prepare();
-    let _peripherals = Peripherals::take().unwrap();
-    
+    let peripherals = Peripherals::take().unwrap();
+    let ic = peripherals.pins.gpio21;
+    let mut checker = ICLineChecker::from_pin(ic)?;
+    loop {
+        log::info!("IC Line is {}", checker.check());
+        FreeRtos::delay_ms(1000);
+    }
     Ok(())
 }
 

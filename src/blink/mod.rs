@@ -1,4 +1,5 @@
-﻿use esp_idf_hal::gpio::Pin;
+﻿use std::time::Duration;
+use esp_idf_hal::gpio::Pin;
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_svc::hal::delay::FreeRtos;
 use esp_idf_svc::hal::gpio::{Output, OutputPin, PinDriver};
@@ -23,13 +24,28 @@ impl<'a, T: OutputPin> Led<'a, T> {
         }
     }
     
+    pub fn on(&mut self) -> Result<(), EspError> {
+        self.pin.set_high()
+    }
+    
+    pub fn off(&mut self) -> Result<(), EspError> {
+        self.pin.set_low()
+    }
+
+    pub fn once(&mut self, duration: Duration) -> Result<(), EspError> {
+        self.on()?;
+        FreeRtos::delay_ms(duration.as_millis() as u32);
+        self.off()?;
+        Ok(())
+    }
+    
     pub fn blink(&mut self, states: &[u32]) -> Result<(), EspError> {
         let mut active= true;
         for state_time in states {
             if active {
-                self.pin.set_high()?;
+                self.on()?
             } else {
-                self.pin.set_low()?;
+                self.off()?
             }
             FreeRtos::delay_ms(*state_time);
             active = !active;

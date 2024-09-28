@@ -3,13 +3,16 @@ mod blink;
 mod uuid;
 mod rgb_led;
 mod wifi;
+mod ic_line_check;
+mod hc_sr04;
+mod hc_sr501;
+mod helpers;
 
 use esp_idf_svc::hal::peripherals::Peripherals;
 
 fn main() -> anyhow::Result<()> {
     prepare();
     let _peripherals = Peripherals::take().unwrap();
-    
     Ok(())
 }
 

@@ -24,6 +24,6 @@ impl<'a, T: InputPin + OutputPin> ICLineChecker<'a, T> {
             self.true_if_low
         } else {
             !self.true_if_low
-        }        
+        }
     }
 }

@@ -7,12 +7,13 @@ mod ic_line_check;
 mod hc_sr04;
 mod hc_sr501;
 mod helpers;
+mod ssd_1306;
 
 use esp_idf_svc::hal::peripherals::Peripherals;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<(), anyhow::Error> {
     prepare();
-    let _peripherals = Peripherals::take().unwrap();
+    let _peripherals = Peripherals::take()?;    
     Ok(())
 }
 

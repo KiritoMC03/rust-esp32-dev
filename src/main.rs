@@ -15,6 +15,7 @@ use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::gpio::PinDriver;
 use esp_idf_svc::hal::peripherals::Peripherals;
 use ssd1306::{prelude::*, Ssd1306};
+use crate::helpers::IntoAnyhow;
 
 fn main() -> anyhow::Result<(), anyhow::Error> {
     prepare();
@@ -25,8 +26,8 @@ fn main() -> anyhow::Result<(), anyhow::Error> {
         peripherals.spi2,
         peripherals.pins.gpio18,
         peripherals.pins.gpio23,
-        peripherals.pins.gpio5,
         peripherals.pins.gpio16,
+        peripherals.pins.gpio5,
     )?;
     let mut display = Ssd1306::new(
         spi,
@@ -36,14 +37,22 @@ fn main() -> anyhow::Result<(), anyhow::Error> {
     display.reset(&mut reset, &mut delay).expect("Failed to reset display");
     display.init().expect("Failed to initialize display");
 
+    // Draw an image
     let raw: ImageRaw<BinaryColor> = ImageRaw::new(include_bytes!("./resources/rust.raw"), 64);
-
     let im = Image::new(&raw, Point::new(32, 0));
-
     im.draw(&mut display).unwrap();
-    
-    FreeRtos::delay_ms(50000);
+    display.flush().into_anyhow()?;
+    log::info!("Image drawn");
+    FreeRtos::delay_ms(1000);
 
+    ssd_1306::tests::draw_lines(&mut display, &mut delay).expect("Failed to draw lines");
+    log::info!("Lines drawn");
+    FreeRtos::delay_ms(1000);
+
+    ssd_1306::tests::draw_disco_lines(&mut display, &mut delay, 2000).expect("Failed to draw lines");
+    log::info!("Disco lines drawn");
+    FreeRtos::delay_ms(500);
+    
     display.flush().unwrap();
     log::info!("Display written to");
     

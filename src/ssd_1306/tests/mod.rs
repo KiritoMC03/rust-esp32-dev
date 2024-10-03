@@ -54,13 +54,14 @@ where
         line.with_color(BinaryColor::On)
             .with_stroke(1);
         let start_y = random();
-        let random = random::<i32>();
+        let random_1 = random::<i32>();
+        let random_2 = random::<i32>();
         let current_line = if start_y {
-            line.with_xy1(random % width, 0)
-                .with_xy2(random % width, height)
+            line.with_xy1(random_1 % width, 0)
+                .with_xy2(random_2 % width, height)
         } else {
-            line.with_xy1(0, random % height)
-                .with_xy2(width, random % height)
+            line.with_xy1(0, random_1 % height)
+                .with_xy2(width, random_2 % height)
         };
         display.draw_single_line(current_line).into_anyhow()?;
         delay.delay_ms(24);

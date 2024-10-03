@@ -1,19 +1,32 @@
 ﻿use anyhow::{Error, Result};
+use display_interface::DisplayError;
+use embedded_graphics::pixelcolor::BinaryColor;
+use embedded_graphics::prelude::*;
+use embedded_graphics::primitives::{Line, PrimitiveStyle};
 use embedded_hal::spi::{Mode, Phase, Polarity};
-use esp_idf_hal::gpio::{self, Gpio5, Gpio16, Gpio18, Gpio23, Output, OutputPin, PinDriver};
+use esp_idf_hal::gpio::{self, Gpio16, Gpio18, Gpio23, Gpio5, Output, OutputPin, PinDriver};
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_hal::prelude::FromValueType;
 use esp_idf_hal::spi::{self, SpiAnyPins, SpiDeviceDriver, SpiDriver, SpiDriverConfig};
 use esp_idf_hal::spi::config::Config;
+use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::prelude::*;
+use ssd1306::Ssd1306;
+
+use crate::helpers::graphics::*;
+use crate::helpers::graphics::lines::*;
+
+pub mod tests;
+
+// https://energiazero.org/cartelle/arduino//arduino_applicazioni/esp32/electronicshub.org-how%20to%20interface%20oled%20display%20with%20esp32%20esp32%20oled%20display%20tutorial.pdf
 
 #[allow(dead_code)]
 pub fn spi_interface_default<'s>(
     spi: spi::SPI2,
-    clock: Gpio18,
-    mosi_data: Gpio23,
-    cs: Gpio5,
+    clock: Gpio18, // D0
+    mosi_data: Gpio23, // D1 / SDA
     dc: Gpio16,
+    cs: Gpio5,
 ) -> Result<SPIInterface<SpiDeviceDriver<'s, SpiDriver<'s>>, PinDriver<'s, Gpio16, Output>>, Error>
 {
     spi_interface(
@@ -49,4 +62,31 @@ pub fn spi_interface<'s, DC>(
     let spi_device_driver = SpiDeviceDriver::new(spi_driver, Some(cs), &config)?;
     let interface = SPIInterface::new(spi_device_driver, dc);
     Ok(interface)
+}
+
+impl<DI, SIZE> Flush for Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>
+where
+    DI: WriteOnlyDataCommand,
+    SIZE: DisplaySize
+{
+    fn flush(&mut self) -> Result<(), DisplayError> {
+        self.flush()?;
+        Ok(())
+    }
+}
+
+impl<DI, SIZE, C> DrawLine<C> for Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>
+where
+    DI: WriteOnlyDataCommand,
+    SIZE: DisplaySize,
+    C: PixelColor + Default,
+    BinaryColor: From<C>
+{
+    fn draw_single_line(&mut self, line: &lines::Line<C>) -> Result<(), DisplayError> {
+        Line::new(line.point1(), line.point2())
+            .into_styled(PrimitiveStyle::with_stroke(line.color.into(), line.stroke))
+            .draw(self)
+            .expect("Failed to draw line");
+        self.flush()
+    }
 }

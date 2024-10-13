@@ -1,3 +1,3 @@
 ﻿[esp]
-wifi_ssid = "TP-Link_5868"
-wifi_psk = "56368689"
+wifi_ssid = "esp"
+wifi_psk = "12345678"

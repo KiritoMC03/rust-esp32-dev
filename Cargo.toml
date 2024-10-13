@@ -41,6 +41,17 @@ ssd1306 = "0.9.0"
 embedded-graphics = "0.8.1"
 display-interface = "0.5.0"
 rand = "0.8.5"
+http = "1.1.0"
+embedded-svc = { version = "0.28.0" }
+
+heapless = { version = "0.8", default-features = false }
+num_enum = { version = "0.7", default-features = false }
+enumset = { version = "1", default-features = false }
+uncased = { version = "0.9.7", default-features = false }
+embedded-hal-async = { version = "1", default-features = false }
+embassy-time-driver = { version = "0.1", optional = true, features = ["tick-hz-1_000_000"] }
+embassy-futures = "0.1"
+futures-io = { version = "0.3", optional = true }
 
 [build-dependencies]
 embuild = "0.32.0"

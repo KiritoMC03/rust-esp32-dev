@@ -1,3 +1,6 @@
 ﻿[esp]
-wifi_ssid = "esp"
-wifi_psk = "12345678"
+ap_ssid = "esp"
+ap_password = "12345678"
+ap_max_payload_len = 8 # Max payload length
+ap_stack_size = 10240 # Need lots of stack to parse JSON
+ap_wifi_channel = 11 # Wi-Fi channel, between 1 and 11

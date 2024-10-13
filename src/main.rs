@@ -38,21 +38,19 @@ use crate::network::access_point::{AccessPoint, AccessPointConfig};
 
 static INDEX_HTML: &str = include_str!("http_ws_server_page.html");
 
-// Max payload length
-const MAX_LEN: usize = 8;
-
-// Need lots of stack to parse JSON
-const STACK_SIZE: usize = 10240;
-
-// Wi-Fi channel, between 1 and 11
-const CHANNEL: u8 = 11;
-
+#[derive(Debug, Copy, Clone)]
 #[toml_cfg::toml_config]
 pub struct Config {
     #[default("esp")]
-    access_point_ssid: &'static str,
+    ap_ssid: &'static str,
     #[default("")]
-    access_point_password: &'static str,
+    ap_password: &'static str,
+    #[default(8)]
+    ap_max_payload_len: usize,
+    #[default(1024)]
+    ap_stack_size: usize,
+    #[default(11)]
+    ap_wifi_channel: u8,
 }
 
 struct GuessingGame {
@@ -135,18 +133,21 @@ fn nth(n: u32) -> Cow<'static, str> {
 }
 
 fn main() -> anyhow::Result<()> {
-    let app_config = CONFIG;
     prepare();
+    const CFG: Config = CONFIG;
+    info!("App config: {:?}", CFG);
 
     let ap_config = AccessPointConfig {
-        ssid: app_config.access_point_ssid,
-        password: app_config.access_point_password,
+        ssid: CFG.ap_ssid,
+        password: CFG.ap_password,
         modem: Peripherals::take()?.modem,
         sys_loop: EspSystemEventLoop::take()?,
         nvs: EspDefaultNvsPartition::take()?,
+        stack_size: CFG.ap_stack_size,
+        wifi_channel: CFG.ap_wifi_channel,
     };
     let mut ap = AccessPoint::new(ap_config)?;
-
+    
     ap.fn_handler("/", Method::Get, |req| {
         req.into_ok_response()?
             .write_all(INDEX_HTML.as_bytes())
@@ -169,30 +170,31 @@ fn main() -> anyhow::Result<()> {
             return Ok(());
         }
         let session = sessions.get_mut(&ws.session()).unwrap();
-
+    
         // NOTE: Due to the way the underlying C implementation works, ws.recv()
         // may only be called with an empty buffer exactly once to receive the
         // incoming buffer size, then must be called exactly once to receive the
         // actual payload.
-
+    
         let (_frame_type, len) = match ws.recv(&mut []) {
             Ok(frame) => frame,
             Err(e) => return Err(e),
         };
-
+    
+        const MAX_LEN: usize = CFG.ap_max_payload_len;
         if len > MAX_LEN {
             ws.send(FrameType::Text(false), "Request too big".as_bytes())?;
             ws.send(FrameType::Close, &[])?;
             return Err(EspError::from_infallible::<ESP_ERR_INVALID_SIZE>());
         }
-
+    
         let mut buf = [0; MAX_LEN]; // Small digit buffer can go on the stack
         ws.recv(buf.as_mut())?;
         let Ok(user_string) = str::from_utf8(&buf[..len]) else {
             ws.send(FrameType::Text(false), "[UTF-8 Error]".as_bytes())?;
             return Ok(());
         };
-
+    
         let Some(user_guess) = GuessingGame::parse_guess(user_string) else {
             ws.send(
                 FrameType::Text(false),
@@ -200,7 +202,7 @@ fn main() -> anyhow::Result<()> {
             )?;
             return Ok(());
         };
-
+    
         match session.guess(user_guess) {
             (Ordering::Greater, n) => {
                 let reply = format!("Your {} guess was too high", nth(n));
@@ -222,7 +224,7 @@ fn main() -> anyhow::Result<()> {
         }
         Ok::<(), EspError>(())
     })?;
-
+    
     // Keep server running beyond when main() returns (forever)
     // Do not call this if you ever want to stop or access it later.
     // Otherwise you can either add an infinite loop so the main task

@@ -31,14 +31,14 @@ use esp_idf_hal::{
     peripheral::Peripheral,
 };
 
-use crate::{CHANNEL, STACK_SIZE};
-
 pub struct AccessPointConfig<'a, M: Peripheral<P=Modem>> {
     pub ssid: &'a str,
     pub password: &'a str,
     pub modem: M,
     pub sys_loop: EspSystemEventLoop,
     pub nvs: EspDefaultNvsPartition,
+    pub stack_size: usize,
+    pub wifi_channel: u8,
 }
 
 #[allow(dead_code)]
@@ -55,12 +55,16 @@ impl<'a> AccessPoint<'a> {
         M: Peripheral<P=Modem> + 'static
     {
         let wifi = wifi(
-            config.ssid, config.password,
+            config.ssid,
+            config.password,
             config.modem,
-            config.sys_loop, config.nvs)?;
+            config.sys_loop,
+            config.nvs,
+            config.wifi_channel,
+        )?;
         Ok(AccessPoint {
             wifi,
-            server: server()?,
+            server: server(config.stack_size)?,
         })
     }
 
@@ -94,6 +98,7 @@ fn wifi<'w>(
     modem: impl Peripheral<P = Modem> + 'static,
     sysloop: EspSystemEventLoop,
     nvs: EspDefaultNvsPartition,
+    channel: u8,
 ) -> Result<BlockingWifi<EspWifi<'w>>, Error> {
     let mut wifi = BlockingWifi::wrap(
         EspWifi::new(modem, sysloop.clone(), Some(nvs))?,
@@ -104,7 +109,7 @@ fn wifi<'w>(
         ssid_hidden: true,
         auth_method: AuthMethod::WPA2Personal,
         password: password.try_into().unwrap(),
-        channel: CHANNEL,
+        channel: channel,
         ..Default::default()
     });
     wifi.set_configuration(&wifi_configuration)?;
@@ -117,9 +122,9 @@ fn wifi<'w>(
     Ok(wifi)
 }
 
-fn server() -> Result<EspHttpServer<'static>, Error> {
+fn server(stack_site: usize) -> Result<EspHttpServer<'static>, Error> {
     let server_configuration = esp_idf_svc::http::server::Configuration {
-        stack_size: STACK_SIZE,
+        stack_size: stack_site,
         ..Default::default()
     };
     let server = EspHttpServer::new(&server_configuration)?;
